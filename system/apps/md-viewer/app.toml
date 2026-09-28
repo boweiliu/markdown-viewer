@@ -1,0 +1,11 @@
+name = "md-viewer"
+display_name = "Search and view markdown files as HTML"
+icon = "icon.svg"
+priority = "user"
+program = "md-viewer"
+
+# How update-app boots a throwaway preview of this app: on a free port, over a
+# scratch copy of its data (see .agents/skills/update-app/scripts/preview_app.py).
+[preview]
+env = {MD_VIEWER_PORT = "{port:main}", MD_VIEWER_HOST = "{host}", MD_VIEWER_DATA_DIR = "{copy:data}"}
+copies = {data = "data/.apps/md-viewer"}

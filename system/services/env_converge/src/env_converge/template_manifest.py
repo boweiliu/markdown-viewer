@@ -666,6 +666,14 @@ SECRET_REFERENCE_PATTERN = re.compile(r"data/\.secrets/([a-z0-9][a-z0-9-]*)\.env
 MCP_SERVERS_FILE_NAME = "mcp-servers.json"
 SUPERVISORD_DROPIN_DIRECTORY = "system/supervisord.conf.d"
 
+# Secret files the minds app itself mints and injects into every workspace --
+# never something an adopter supplies, so never something a template's own
+# apps/skills should be asked to declare. The default template base's own
+# built-in services (host-backup, share-gateway) reference these in their
+# supervisord dropins, so without this exemption every template -- adopted or
+# freshly published -- would fail this check regardless of what it includes.
+PLATFORM_INJECTED_SECRET_FILES = frozenset({"restic", "share"})
+
 
 def check_secret_references(
     repo_root: Path, manifest: TemplateManifest
@@ -688,6 +696,8 @@ def check_secret_references(
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         for file in sorted(set(SECRET_REFERENCE_PATTERN.findall(text))):
+            if file in PLATFORM_INJECTED_SECRET_FILES:
+                continue
             if file not in declared:
                 problems.append(
                     f"{path.relative_to(repo_root).as_posix()} runs under data/.secrets/{file}.env, "

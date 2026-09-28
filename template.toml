@@ -1,0 +1,60 @@
+# Machine-readable manifest for this template. The sibling
+# template.md holds the prose, the Requirements list, and the two
+# append-only history logs; this file is authoritative for everything
+# below. Both are generated together -- validate_template.py fails if
+# they disagree.
+format = "v2"
+
+[template]
+slug = "markdown-viewer"
+title = "Markdown Viewer"
+description = "Search and view markdown files from any directory, rendered with syntax highlighting"
+thumbnail = "template.svg"
+version = "v1"
+
+# How this template is DERIVED from the workspace it came from. An
+# update re-runs this recipe rather than diffing two repos, which is what
+# keeps an exclusion excluded even though the thing still exists upstream.
+[recipe]
+include = ["system/apps/md-viewer"]
+data_include = []
+exclude = []
+modification_rules = []
+
+# Everything an adopter must deal with before this is really theirs.
+# One list -- but each entry's KIND says how it is handled, because the
+# two are handled at different times by different mechanisms:
+#
+#   permission / secret / llm = ACTIVATION. The adopting agent acts on
+#   these FIRST and BY ITSELF, initiating each latchkey permission
+#   request and each secret request before asking the user anything.
+#   Every one of them must have a matching requires_ line in template.md
+#   and vice versa -- the validator checks that, because an adopter once
+#   never got prompted for a permission the app needed.
+#
+#   The [[requirements.secret]] entries below were AGGREGATED from the
+#   included apps' app.toml [[secrets]] and skills' SKILL.md secrets:
+#   declarations, plus every data/.secrets/<file>.env the snapshot's
+#   mcp-servers.json and supervisord programs run under. Fix a wrong one
+#   at its declaration, not here.
+#
+#   adaptation = worked through INTERACTIVELY with the user afterwards.
+#   Prose on both sides, so it is not cross-checked.
+#
+# FILL IN, e.g.:
+#   [[requirements.permission]]
+#   scope = "slack-api"
+#   permission = "slack-read-all"
+#
+#   [requirements.llm]
+#   method = "keyed"   # keyed (an API key, e.g. ANTHROPIC_API_KEY) | keyless (a subscription CLI, e.g. claude -p)
+#
+[requirements]
+
+[[requirements.adaptation]]
+summary = "the app has no supervisord program entry or forward_port.py port registration -- only its own package (system/apps/md-viewer) is included"
+resolution = "give it a system/supervisord.conf.d/md-viewer.conf program entry (mirroring another simple Flask app such as getting_started) and register its port in system/scripts/forward_port.py, then supervisorctl reread && supervisorctl update, so it can be opened as a window"
+
+[environment]
+apt = []
+env_d_units = []
