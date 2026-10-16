@@ -82,9 +82,20 @@ SHELL_PAGE_SCRIPT = """<script type="module">
 </script>"""
 
 WORKSPACE_ROOT = Path("/home/user/workspace")
-SEARCH_PATHS = [
+SKIP_SEARCH_DIRS = {
+    ".git", ".venv", "node_modules", "__pycache__", ".mypy_cache",
+    ".pytest_cache", ".ruff_cache", ".next", "dist", "build", "vendor",
+}
+SEARCH_ROOTS = [
     WORKSPACE_ROOT,
-    WORKSPACE_ROOT / ".external_worktrees",
+    WORKSPACE_ROOT / "docs",
+    WORKSPACE_ROOT / "data",
+    WORKSPACE_ROOT / "apps",
+    WORKSPACE_ROOT / "skills",
+    WORKSPACE_ROOT / "system/apps",
+    WORKSPACE_ROOT / ".agents/skills",
+    WORKSPACE_ROOT / ".external_worktrees/check-repos",
+    WORKSPACE_ROOT / ".external_worktrees/markdown-viewer",
 ]
 
 app = Flask("md_viewer", static_folder=None)
@@ -93,13 +104,22 @@ app = Flask("md_viewer", static_folder=None)
 def find_markdown_files(query: str) -> list[tuple[str, Path]]:
     query_lower = query.lower()
     results = []
-    for search_path in SEARCH_PATHS:
-        if not search_path.exists():
+    for search_root in SEARCH_ROOTS:
+        if not search_root.exists():
             continue
-        for md_file in search_path.rglob("*.md"):
-            if query_lower in md_file.name.lower():
-                rel_path = md_file.relative_to(WORKSPACE_ROOT)
-                results.append((str(rel_path), md_file))
+        for directory, subdirs, filenames in os.walk(search_root):
+            current = Path(directory)
+            if current == WORKSPACE_ROOT:
+                subdirs[:] = []
+            elif current == WORKSPACE_ROOT / "data":
+                subdirs[:] = [name for name in subdirs if not name.startswith(".") and name not in {"workspace-chats", "imports"}]
+            else:
+                subdirs[:] = [name for name in subdirs if name not in SKIP_SEARCH_DIRS]
+            for filename in filenames:
+                if filename.lower().endswith(".md") and query_lower in filename.lower():
+                    md_file = current / filename
+                    rel_path = md_file.relative_to(WORKSPACE_ROOT)
+                    results.append((str(rel_path), md_file))
     return sorted(results, key=lambda x: x[0])
 
 
@@ -108,7 +128,7 @@ def render_markdown(file_path: Path) -> str:
         abort(404)
     if not file_path.suffix.lower() == ".md":
         abort(400)
-    if not str(file_path.resolve()).startswith(str(WORKSPACE_ROOT.resolve())):
+    if not file_path.resolve().is_relative_to(WORKSPACE_ROOT.resolve()):
         abort(403)
 
     content = file_path.read_text(encoding="utf-8")
