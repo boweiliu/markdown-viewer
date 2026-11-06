@@ -1,0 +1,10 @@
+name = "markdown-viewer"
+display_name = "Markdown Viewer"
+icon = "icon.svg"
+priority = "user"
+program = "markdown-viewer"
+stop_when_no_windows = false
+
+[[references]]
+path = "system/scripts/run_markdown_viewer.sh"
+note = "Starts the external Markdown Viewer app."
